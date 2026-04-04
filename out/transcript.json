@@ -1,0 +1,76 @@
+[
+  {
+    "phase": "start",
+    "csv": "data/survey.csv"
+  },
+  {
+    "step": 0,
+    "tool": "dataset_profile",
+    "ok": true,
+    "summary": "rows=5000 cols=174"
+  },
+  {
+    "step": 1,
+    "tool": "column_snapshot",
+    "ok": true,
+    "summary": "trust_police: kind=numeric, missing=0.0448"
+  },
+  {
+    "step": 1,
+    "tool": "column_snapshot",
+    "ok": true,
+    "summary": "gender: kind=categorical, missing=0.0196"
+  },
+  {
+    "step": 1,
+    "tool": "column_snapshot",
+    "ok": true,
+    "summary": "education: kind=categorical, missing=0.0164"
+  },
+  {
+    "step": 1,
+    "tool": "column_snapshot",
+    "ok": true,
+    "summary": "age: kind=numeric, missing=0.0"
+  },
+  {
+    "step": 1,
+    "tool": "column_snapshot",
+    "ok": true,
+    "summary": "q_001: kind=numeric, missing=0.0642"
+  },
+  {
+    "step": 1,
+    "tool": "column_snapshot",
+    "ok": true,
+    "summary": "q_002: kind=numeric, missing=0.0626"
+  },
+  {
+    "step": 1,
+    "tool": "column_snapshot",
+    "ok": true,
+    "summary": "q_003: kind=numeric, missing=0.0582"
+  },
+  {
+    "step": 2,
+    "tool": "numeric_correlation",
+    "ok": true,
+    "summary": "corr matrix for 10 columns"
+  },
+  {
+    "step": 3,
+    "tool": "ttest_groups",
+    "ok": true,
+    "summary": "t-test p=0.2057"
+  },
+  {
+    "step": 4,
+    "tool": "anova_numeric_by_category",
+    "ok": true,
+    "summary": "ANOVA p=0.3937"
+  },
+  {
+    "step": 5,
+    "assistant_text": "Результаты однофакторного ANOVA для анализа доверия к полиции в зависимости от уровня образования:\n\n- Число групп: 6\n- Размеры групп: 796, 742, 820, 804, 766, 756\n- Статистика F: 1.04\n- p-значение: 0.394\n\nПоскольку p-значение больше 0.05, мы не можем отвергнуть нулевую гипотезу. Это указывает на отсутствие статистически значимых различий в доверии к полиции в зависимости от уровня образования.\n\n### Выводы:\n1. Данные показывают, что доверие к различным институтам, таким как полиция, парламент и бизнес, имеет низкие корреляции между собой, за исключением доверия к СМИ, которое связано с доверием к полиции и судам.\n2. Нет статистически значимых различий в доверии к полиции между мужчинами и женщинами.\n3. Также не выявлено значительных различий в доверии к полиции в зависимости от уровня образования.\n\nЭти результаты могут указывать на общую тенденцию недоверия к институтам в обществе, независимо от пола или уровня образования."
+  }
+]

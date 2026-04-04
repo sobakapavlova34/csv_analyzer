@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <title>Отчёт: анализ опроса о доверии ({{ run_slug }})</title>
+  <!-- build: run={{ run_slug }} hypotheses={{ hypothesis_count }} source={{ hyp_source }} json_exists={{ hypotheses_json_found }} -->
+  <style>
+    :root { --bg: #f8fafc; --card: #fff; --text: #1e293b; --muted: #64748b; --accent: #0f766e; --border: #e2e8f0; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.55; color: var(--text); background: var(--bg); margin: 0; padding: 0 1rem 3rem; }
+    .wrap { max-width: 900px; margin: 0 auto; }
+    header { padding: 2rem 0 1rem; border-bottom: 1px solid var(--border); }
+    h1 { font-size: 1.75rem; margin: 0 0 0.5rem; }
+    .meta { color: var(--muted); font-size: 0.9rem; }
+    section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem 1.5rem; margin: 1.25rem 0; }
+    h2 { font-size: 1.2rem; margin: 0 0 0.75rem; color: var(--accent); }
+    h3 { font-size: 1rem; margin: 1rem 0 0.5rem; }
+    p { margin: 0.5rem 0; }
+    ul { margin: 0.4rem 0; padding-left: 1.2rem; }
+    .lead { font-size: 1.05rem; color: var(--text); }
+    .muted { color: var(--muted); font-size: 0.92rem; }
+    figure { margin: 1rem 0; text-align: center; }
+    figure img { max-width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--border); }
+    figcaption { font-size: 0.85rem; color: var(--muted); margin-top: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { border: 1px solid var(--border); padding: 0.45rem 0.6rem; text-align: left; vertical-align: top; }
+    th { background: #f1f5f9; }
+    .pill { display: inline-block; background: #ecfdf5; color: #065f46; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+    footer { margin-top: 2rem; font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Анализ данных опроса о доверии к институтам</h1>
+    <p class="meta">Отчёт сформирован: {{ generated_at }} · Источник данных: <code>{{ csv_source }}</code></p>
+    <p class="meta"><strong>Прогон:</strong> <code>{{ run_slug }}</code> ·
+      <strong>Гипотез в JSON:</strong> {{ hypothesis_count }} ·
+      <strong>source:</strong> {{ hyp_source or "—" }}
+      {% if not hypotheses_json_found %}<span style="color:#b91c1c"> (файл hypotheses.json не найден по пути {{ hypothesis_json_path }})</span>{% endif %}
+    </p>
+  </header>
+
+  <section>
+    <h2>Кратко: что сделано</h2>
+    <p class="lead">
+      Мы автоматически привели таблицу к удобному виду, посмотрели распределения и связи между ответами,
+      сгруппировали респондентов по профилю доверия (кластеры), сформулировали гипотезы и проверили ключевые
+      утверждения статистикой. Ниже — выводы простым языком и оценка надёжности (p-значения и эффекты).
+    </p>
+    <p class="muted">Размер таблицы: {{ n_rows or "—" }} строк × {{ n_columns or "—" }} столбцов.</p>
+  </section>
+
+  {% if cluster_story and cluster_story.cluster_mean_trust_overall %}
+  <section>
+    <h2>Главное из разведочного анализа</h2>
+    <ul>
+      <li>Выделены <strong>{{ cluster_story.n_clusters or "несколько" }}</strong> групп респондентов по схожести ответов о доверии (кластеры по шкалам trust_*).</li>
+      <li>Кластер <span class="pill">скептики</span> №{{ cluster_story.suggested_label_skeptic_cluster }} — наименьшее среднее доверие по институтам;
+        кластер с более высоким доверием — №{{ cluster_story.suggested_label_booster_cluster }}.</li>
+      {% if cluster_story.education_vs_trust_media and cluster_story.education_vs_trust_media.group_means_trust_media %}
+      <li>По доверию к <strong>СМИ</strong> заметен разброс между группами образования (см. график ниже и статистику).</li>
+      {% endif %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if figures %}
+  <section>
+    <h2>Графики</h2>
+    {% if figures.get('corr') %}
+    <figure>
+      <img src="{{ figures.corr }}" alt="Корреляции доверия"/>
+      <figcaption>Насколько согласованы ответы по разным институтам: тёплые цвета — положительная связь.</figcaption>
+    </figure>
+    {% endif %}
+    {% if figures.get('clusters') %}
+    <figure>
+      <img src="{{ figures.clusters }}" alt="Кластеры"/>
+      <figcaption>Средний уровень доверия по кластерам (чем ниже столбец — тем «скептичнее» профиль).</figcaption>
+    </figure>
+    {% endif %}
+    {% if figures.get('edu_media') %}
+    <figure>
+      <img src="{{ figures.edu_media }}" alt="Доверие к СМИ и образование"/>
+      <figcaption>Доверие к СМИ по группам образования (ящики показывают разброс и медиану).</figcaption>
+    </figure>
+    {% endif %}
+    {% if figures.get('pca') %}
+    <figure>
+      <img src="{{ figures.pca }}" alt="PCA"/>
+      <figcaption>Упрощённая «карта» респондентов: близкие точки — похожие профили доверия.</figcaption>
+    </figure>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <section>
+    <h2>Содержательные гипотезы</h2>
+
+    {% if has_hypothesis_text %}
+    <p class="muted">Формулировки из этапа LLM (<code>hypotheses/hypotheses.json</code>). Под каждой гипотезой — связанные статистические тесты из батареи этого прогона.</p>
+    <p class="muted" style="margin-top:1rem; margin-bottom:0.25rem"><strong>Пояснение сокращений</strong> (таблицы под гипотезами)</p>
+    <p class="muted" style="font-size:0.9rem; margin-top:0"><strong>p-value</strong> — вероятность получить такой же или более сильный результат при отсутствии связи в генеральной совокупности; чем меньше p при достаточном n, тем меньше похоже на случайность.</p>
+    <p class="muted" style="font-size:0.9rem; margin-top:0.35rem"><strong>r</strong> — коэффициент корреляции Пирсона (−1…1): линейная согласованность двух шкал.</p>
+    <p class="muted" style="font-size:0.9rem; margin-top:0.35rem"><strong>ДИ</strong> — доверительный интервал; в колонке «Эффект» для корреляций указан <strong>95% ДИ для r</strong> (по преобразованию Фишера): диапазон совместимых значений истинной корреляции при стандартных допущениях.</p>
+    <p class="muted" style="font-size:0.9rem; margin-top:0.35rem"><strong>Cohen's d</strong> — стандартизованная разница средних (две группы); <strong>Cramér's V</strong> — мера силы связи для таблиц сопряжённости (χ²).</p>
+    <p class="muted" style="font-size:0.9rem; margin-top:0.35rem">Колонка <strong>«Надёжность»</strong> — словесная интерпретация уровня p (не заменяет экспертную оценку дизайна и множественных сравнений).</p>
+    {% for h in hypotheses_with_tests %}
+      {% if 'raw' in h %}
+      <p>{{ h.raw }}</p>
+      {% else %}
+      <h3>{{ loop.index }}. {{ h.get('title', 'Гипотеза') }}</h3>
+      <p>{{ h.get('statement', '') }}</p>
+      {% if h.get('grounding') %}<p class="muted"><em>Опора в данных:</em> {{ h.grounding }}</p>{% endif %}
+      {% if h.tests %}
+      <p class="muted" style="margin-top:0.75rem"><strong>Статистическая проверка (связанные тесты):</strong></p>
+      <table>
+        <thead>
+          <tr>
+            <th>Тест</th>
+            <th>Вопрос</th>
+            <th>p-value</th>
+            <th>Эффект / интервал</th>
+            <th>Надёжность</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in h.tests %}
+          <tr>
+            <td><code>{{ t.id }}</code></td>
+            <td>{{ t.question }}</td>
+            <td>{% if t.pvalue is not none %}{{ t.pvalue }}{% else %}—{% endif %}</td>
+            <td>{{ t.effect }}</td>
+            <td>{{ t.reliability }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+      {% endif %}
+    {% endfor %}
+    {% endif %}
+
+    {% if hyp_source == 'error' and not has_hypothesis_text %}
+    <p class="muted"><strong>Почему нет текста от LLM в этом прогоне:</strong> при запуске пайплайна не удалось обратиться к API (сеть, DNS, прокси). Это записано в <code>hypotheses/hypotheses.json</code> — отчёт <em>не</em> вызывает модель заново, он только показывает сохранённое.</p>
+    {% if hyp_error %}<p class="muted">Техническая запись: {{ hyp_error }}</p>{% endif %}
+    <p class="muted">Указание пути к <code>artifacts/…</code> при <code>build_report.py</code> не «чинит» старый JSON: в каждой папке лежит снимок того прогона. Чтобы получить LLM-гипотезы — исправь сеть / <code>BOTHUB_BASE_URL</code> / <code>BOTHUB_IGNORE_SYSTEM_PROXY</code> и снова запусти <code>run_pipeline.py</code> (новая папка). Либо подставь готовый <code>hypotheses.json</code> в этот каталог и пересобери отчёт.</p>
+    {% elif hyp_source == 'skipped_no_api_key' and not has_hypothesis_text %}
+    <p class="muted">Ключ API не был задан — блок LLM пропущен. Статистические тесты по данным остаются в <code>tests/statistical_report.json</code>.</p>
+    {% elif not has_hypothesis_text and hyp_source not in ['error', 'skipped_no_api_key'] %}
+    <p class="muted">Список гипотез в JSON пуст.</p>
+    {% endif %}
+
+    {% if not has_hypothesis_text and (hypothesis_fallback_hints or hypothesis_fallback_tests) %}
+    <h3>Ориентиры для содержательных гипотез (из данных, без LLM)</h3>
+    <p class="muted">Если LLM недоступен, эти пункты можно использовать как заготовки формулировок — они опираются на <code>cluster_story.json</code> и на вопросы статистических тестов.</p>
+    {% if hypothesis_fallback_hints %}
+    <p><strong>Из кластерного анализа:</strong></p>
+    <ul>
+      {% for line in hypothesis_fallback_hints %}<li>{{ line }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    {% if hypothesis_fallback_tests %}
+    <p><strong>Проверяемые вопросы (тесты в этом прогоне):</strong></p>
+    <ul>
+      {% for line in hypothesis_fallback_tests %}<li>{{ line }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    {% endif %}
+  </section>
+  
+  <section>
+    <h2>Ограничения</h2>
+    <ul>
+      <li>Корреляции и t-тесты не доказывают причинность — только связь в данных.</li>
+      <li>Много тестов подряд увеличивает риск случайных «значимых» результатов; при серьёзных выводах стоит корректировать на множественность (FDR) и смотреть размер эффекта.</li>
+      <li>Синтетические или реальные данные могут содержать шум и пропуски; предобработка смягчает, но не убирает все артефакты.</li>
+    </ul>
+  </section>
+
+  <footer>
+    Отчёт сгенерирован автоматически. Для PDF: откройте этот файл в браузере → Печать → «Сохранить как PDF».
+  </footer>
+</div>
+</body>
+</html>
